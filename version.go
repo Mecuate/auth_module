@@ -1,3 +1,3 @@
 package auth
 
-var Version versionType = "0.0.3"
+var Version versionType = "v0.0.4"
