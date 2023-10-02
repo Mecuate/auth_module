@@ -1,4 +1,4 @@
-module github.com/Mecuate/auth
+module github.com/Mecuate/auth_module
 
 go 1.18
 
