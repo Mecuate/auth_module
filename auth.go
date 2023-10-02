@@ -67,7 +67,7 @@ func verificateToken(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func loadFromFile() {
-	cfgFileName := ".env"
+	cfgFileName := localEnvFile
 	if cfgFileName != "" {
 
 		err := godotenv.Load(cfgFileName)
