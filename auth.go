@@ -7,6 +7,7 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -15,6 +16,7 @@ var envConf = &EnvConfs{}
 var noAuthSecret = envconfig.Process(envPrefix, envConf)
 
 func VerifyRequest(w http.ResponseWriter, r *http.Request) bool {
+	loadFromFile()
 	_, err := HasAuthHeader(r)
 	if err != nil {
 		noAuthHeader(w, r)
@@ -59,4 +61,16 @@ func verificateToken(w http.ResponseWriter, r *http.Request) bool {
 	w.Write([]byte(authString))
 
 	return ok
+}
+
+func loadFromFile() {
+	cfgFileName := ".env"
+	if cfgFileName != "" {
+
+		err := godotenv.Load(cfgFileName)
+
+		if err != nil {
+			fmt.Println("ENV_FILE not found in AUTH package")
+		}
+	}
 }
