@@ -9,5 +9,5 @@ type versionType = string
 type RecieverFunc func(w http.ResponseWriter, r *http.Request)
 
 type EnvConfs struct {
-	Secret string `required:"true" split_words:"true"`
+	AuthSignKey string `required:"true" split_words:"true"`
 }
