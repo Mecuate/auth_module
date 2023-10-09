@@ -80,6 +80,10 @@ func verificateToken(w http.ResponseWriter, r *http.Request) (bool, MecuateClaim
 		if email == "" || email == "undefined" {
 			return failedToken(w, 7)
 		}
+		realms := claims.Realms
+		if realms == nil {
+			return failedToken(w, 11)
+		}
 		id := claims.ID
 		if id == "" || id == "undefined" {
 			return failedToken(w, 10)
@@ -123,5 +127,6 @@ var errorMessages = map[int8]string{
 	8:  "Missing audience.",
 	9:  "Time range failed verification.",
 	10: "No ID found.",
+	11: "Missing realms.",
 	44: "Fly me to the moon\nLet me play among the stars\nLet me see what spring is like\nOn a-Jupiter and Mars\n\nIn other words: hold my hand\nIn other words: baby, kiss me\n\nFill my heart with song\nAnd let me sing for ever more\nYou are all I long for\nAll I worship and adore\n\nIn other words: please, be true\nIn other words: I love you\n\nFill my heart with song\nLet me sing for ever more\nYou are all I long for\nAll I worship and adore\n\nIn other words: please, be true\nIn other words, in other words: I love you",
 }
