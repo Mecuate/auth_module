@@ -38,7 +38,7 @@ func verificateToken(w http.ResponseWriter, r *http.Request) (bool, MecuateClaim
 
 	tokenString := strings.Split(r.Header.Get("Authorization"), " ")[1]
 	var envConf = &EnvConfs{}
-	var noAuthSecret = envconfig.Process("KAAB_MECUATE", envConf)
+	var noAuthSecret = envconfig.Process("MECUATE", envConf)
 	if noAuthSecret != nil {
 		return failedToken(w, 1)
 	}

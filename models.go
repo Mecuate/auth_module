@@ -15,19 +15,21 @@ type EnvConfs struct {
 }
 
 type MecuateClaims struct {
-	Email string `json:"email"`
+	Email  string `json:"email"`
+	Realms RealmT `json:"realms"`
 	jwt.RegisteredClaims
 }
 
-type Realms []string
+type RealmT map[string]string
 
 type MecuateClaimsResponse struct {
-	Email     string `json:"email"`
-	ExpiresAt int64  `json:"expiresat"`
-	IssuedAt  int64  `json:"issuedat"`
-	NotBefore int64  `json:"notbefore"`
-	Issuer    string `json:"issuer"`
-	Subject   string `json:"subject"`
-	ID        string `json:"id"`
-	Audience  Realms `json:"audience"`
+	Email     string   `json:"email"`
+	ExpiresAt int64    `json:"expiresat"`
+	IssuedAt  int64    `json:"issuedat"`
+	NotBefore int64    `json:"notbefore"`
+	Issuer    string   `json:"issuer"`
+	Subject   string   `json:"subject"`
+	ID        string   `json:"id"`
+	Audience  []string `json:"audience"`
+	Realms    RealmT   `json:"realms"`
 }
