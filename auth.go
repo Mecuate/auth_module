@@ -19,7 +19,7 @@ func Authorized(w http.ResponseWriter, r *http.Request) (bool, MecuateClaimsResp
 }
 
 func verificateToken(w http.ResponseWriter, r *http.Request) (bool, MecuateClaimsResponse) {
-	UserToken := strings.Split(r.Header.Get("User-Token"), " ")[1] == "user-token"
+	UserToken := r.Header.Get("User-Token") == "user-token"
 	TokenString := strings.Split(r.Header.Get("Authorization"), " ")[1]
 	var envConf = &EnvConfs{}
 	var noAuthSecret = envconfig.Process("MECUATE", envConf)
@@ -115,7 +115,7 @@ var errorMessages = map[int8]string{
 
 func noAuthHeader(w http.ResponseWriter, r *http.Request) {
 	http.Header.Add(w.Header(), "WWW-Authenticate", `JWT realm="Restricted"`)
-	http.Header.Add(w.Header(), "Access-Control-Astrophytum-Credentials", `SESSION`)
+	http.Header.Add(w.Header(), "User-Token", `SESSION`)
 	http.Error(w, "", http.StatusUnauthorized)
 }
 

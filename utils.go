@@ -21,13 +21,14 @@ func Permissions(R RealmT) *RealmPermissions {
 	return &RealmPermissions{R}
 }
 
-func (rp *RealmPermissions) Write() RealmPermission {
+func (rp *RealmPermissions) Update() RealmPermission {
 	return RealmPermission{
 		Apis:    evalWrite(rp.R.Apis),
 		Media:   evalWrite(rp.R.Media),
 		Mecuate: evalWrite(rp.R.Mecuate),
 	}
 }
+
 func (rp *RealmPermissions) Create() RealmPermission {
 	return RealmPermission{
 		Apis:    evalCreate(rp.R.Apis),
@@ -35,6 +36,7 @@ func (rp *RealmPermissions) Create() RealmPermission {
 		Mecuate: evalCreate(rp.R.Mecuate),
 	}
 }
+
 func (rp *RealmPermissions) Delete() RealmPermission {
 	return RealmPermission{
 		Apis:    evalDelete(rp.R.Apis),
@@ -42,6 +44,7 @@ func (rp *RealmPermissions) Delete() RealmPermission {
 		Mecuate: evalDelete(rp.R.Mecuate),
 	}
 }
+
 func (rp *RealmPermissions) Read() RealmPermission {
 	return RealmPermission{
 		Apis:    evalRead(rp.R.Apis),
