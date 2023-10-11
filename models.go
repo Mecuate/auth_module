@@ -11,7 +11,14 @@ type versionType = string
 type RecieverFunc func(w http.ResponseWriter, r *http.Request)
 
 type EnvConfs struct {
-	AuthSignKey string `required:"true" split_words:"true"`
+	AuthSignKey  string `required:"true" split_words:"true"`
+	GuestSignKey string `required:"true" split_words:"true"`
+}
+
+type RealmT struct {
+	Apis    string `json:"apis"`
+	Media   string `json:"media"`
+	Mecuate string `json:"mecuate"`
 }
 
 type MecuateClaims struct {
@@ -20,16 +27,12 @@ type MecuateClaims struct {
 	jwt.RegisteredClaims
 }
 
-type RealmT map[string]string
-
 type MecuateClaimsResponse struct {
-	Email     string   `json:"email"`
-	ExpiresAt int64    `json:"expiresat"`
-	IssuedAt  int64    `json:"issuedat"`
-	NotBefore int64    `json:"notbefore"`
-	Issuer    string   `json:"issuer"`
-	Subject   string   `json:"subject"`
-	ID        string   `json:"id"`
-	Audience  []string `json:"audience"`
-	Realms    RealmT   `json:"realms"`
+	Email    string           `json:"email"`
+	Realms   RealmPermissions `json:"realms"`
+	Audience []string         `json:"audience"`
+	Valid    bool             `json:"valid"`
+	Lifetime string           `json:"lifetime"`
+	Id       string           `json:"user_id"`
+	Trace    string           `json:"trace_id"`
 }
