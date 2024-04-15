@@ -10,29 +10,45 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+var envConf = &EnvConfs{}
+
+var UserTokenTarget string
+var GuestTokenTarget string
+
 func Authorized(w http.ResponseWriter, r *http.Request) (bool, MecuateClaimsResponse) {
+	var noAuthSecret = envconfig.Process("MECUATE", envConf)
+	UserTokenTarget = envConf.UserTarget
+	GuestTokenTarget = envConf.GuestTarget
+
+	if noAuthSecret != nil {
+		return failedToken(w, 1)
+	}
 	_, err := hasAuthHeader(r)
 	if err != nil {
-		noAuthHeader(w, r)
+		noAuthHeader(w)
 	}
 	return verificateToken(w, r)
 }
 
 func verificateToken(w http.ResponseWriter, r *http.Request) (bool, MecuateClaimsResponse) {
-	UserToken := r.Header.Get("User-Token") == "user-token"
-	TokenString := strings.Split(r.Header.Get("Authorization"), " ")[1]
-	var envConf = &EnvConfs{}
-	var noAuthSecret = envconfig.Process("MECUATE", envConf)
-	if noAuthSecret != nil {
+	UserToken, GuestToken := DecodeUserToken(r.Header.Get("User-Token"))
+	if !GuestToken && !UserToken {
+		return failedToken(w, 44)
+	}
+
+	TokenString := strings.Split(r.Header.Get("Authorization"), " ")
+	if len(TokenString) != 2 || TokenString[0] != "Bearer" || TokenString[1] == "" {
 		return failedToken(w, 1)
 	}
-	var cypherKey = envConf.GuestSignKey
 
+	var cypherKey string
+	if GuestToken {
+		cypherKey = envConf.GuestSignKey
+	}
 	if UserToken {
 		cypherKey = envConf.AuthSignKey
 	}
-
-	token, _ := jwt.ParseWithClaims(TokenString, &MecuateClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, _ := jwt.ParseWithClaims(TokenString[1], &MecuateClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(cypherKey), nil
 	})
 
@@ -113,7 +129,7 @@ var errorMessages = map[int8]string{
 	44: "Fly me to the moon\nLet me play among the stars\nLet me see what spring is like\nOn a-Jupiter and Mars\n\nIn other words: hold my hand\nIn other words: baby, kiss me\n\nFill my heart with song\nAnd let me sing for ever more\nYou are all I long for\nAll I worship and adore\n\nIn other words: please, be true\nIn other words: I love you\n\nFill my heart with song\nLet me sing for ever more\nYou are all I long for\nAll I worship and adore\n\nIn other words: please, be true\nIn other words, in other words: I love you",
 }
 
-func noAuthHeader(w http.ResponseWriter, r *http.Request) {
+func noAuthHeader(w http.ResponseWriter) {
 	http.Header.Add(w.Header(), "WWW-Authenticate", `JWT realm="Restricted"`)
 	http.Header.Add(w.Header(), "User-Token", `SESSION`)
 	http.Error(w, "", http.StatusUnauthorized)

@@ -1,5 +1,9 @@
 package auth_module
 
+import (
+	"encoding/json"
+)
+
 func Boolean(x string) bool {
 	if x == "false" || x == "False" || x == "FALSE" || x == "0" || x == "undefined" || x == "null" || x == "" {
 		return false
@@ -111,4 +115,20 @@ func evalWrite(v string) bool {
 		res = true
 	}
 	return res
+}
+
+func DecodeUserToken(token string) (bool, bool) {
+	if token == "" {
+		return false, false
+	}
+
+	return token == UserTokenTarget, token == GuestTokenTarget
+}
+
+func ParseJSON(data string, model interface{}) error {
+	err := json.Unmarshal([]byte(data), &model)
+	if err != nil {
+		return err
+	}
+	return nil
 }

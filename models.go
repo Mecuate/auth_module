@@ -13,6 +13,8 @@ type RecieverFunc func(w http.ResponseWriter, r *http.Request)
 type EnvConfs struct {
 	AuthSignKey  string `required:"true" split_words:"true"`
 	GuestSignKey string `required:"true" split_words:"true"`
+	UserTarget   string `required:"true" split_words:"true"`
+	GuestTarget  string `required:"true" split_words:"true"`
 }
 
 type RealmT struct {
@@ -35,4 +37,9 @@ type MecuateClaimsResponse struct {
 	Lifetime string           `json:"lifetime"`
 	Id       string           `json:"user_id"`
 	Trace    string           `json:"trace_id"`
+}
+
+type OpenFILE struct {
+	Filename  string
+	DataModel interface{}
 }
