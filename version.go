@@ -1,3 +1,3 @@
 package auth_module
 
-var Version versionType = "v0.1.2"
+var Version versionType = "v1.0.0"

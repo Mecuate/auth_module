@@ -10,35 +10,48 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+const (
+	AuthHeader      = "Authorization"
+	UserTokenHeader = "User-Token"
+)
+
 var envConf = &EnvConfs{}
 
+var AuthError error
 var UserTokenTarget string
 var GuestTokenTarget string
 
-func Authorized(w http.ResponseWriter, r *http.Request) (bool, MecuateClaimsResponse) {
-	var noAuthSecret = envconfig.Process("MECUATE", envConf)
-	UserTokenTarget = envConf.UserTarget
-	GuestTokenTarget = envConf.GuestTarget
-
-	if noAuthSecret != nil {
-		return failedToken(w, 1)
-	}
-	_, err := hasAuthHeader(r)
-	if err != nil {
-		noAuthHeader(w)
-	}
-	return verificateToken(w, r)
+func Headers() []string {
+	return []string{AuthHeader, UserTokenHeader}
 }
 
-func verificateToken(w http.ResponseWriter, r *http.Request) (bool, MecuateClaimsResponse) {
-	UserToken, GuestToken := DecodeUserToken(r.Header.Get("User-Token"))
+func SetUpAuthReader() error {
+	AuthError = envconfig.Process("MECUATE", envConf)
+	if AuthError != nil {
+		return AuthError
+	}
+	UserTokenTarget = envConf.UserTarget
+	GuestTokenTarget = envConf.GuestTarget
+	return AuthError
+}
+
+func Authorized(r *http.Request) (bool, MecuateClaimsResponse, error) {
+	_, err := hasAuthHeader(r)
+	if err != nil {
+		return failedToken()
+	}
+	return verificateToken(r)
+}
+
+func verificateToken(r *http.Request) (bool, MecuateClaimsResponse, error) {
+	UserToken, GuestToken := DecodeUserToken(r.Header.Get(UserTokenHeader))
 	if !GuestToken && !UserToken {
-		return failedToken(w, 44)
+		return failedToken()
 	}
 
-	TokenString := strings.Split(r.Header.Get("Authorization"), " ")
-	if len(TokenString) != 2 || TokenString[0] != "Bearer" || TokenString[1] == "" {
-		return failedToken(w, 1)
+	TokenString := strings.Split(r.Header.Get(AuthHeader), " ")
+	if len(TokenString) < 2 || len(TokenString) > 2 || TokenString[0] != "Bearer" || TokenString[1] == "" {
+		return failedToken()
 	}
 
 	var cypherKey string
@@ -48,50 +61,51 @@ func verificateToken(w http.ResponseWriter, r *http.Request) (bool, MecuateClaim
 	if UserToken {
 		cypherKey = envConf.AuthSignKey
 	}
-	token, _ := jwt.ParseWithClaims(TokenString[1], &MecuateClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(TokenString[1], &MecuateClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(cypherKey), nil
 	})
+	if err != nil {
+		return failedToken(err.Error())
+	}
 
 	claims, ok := token.Claims.(*MecuateClaims)
-
 	if ok && token.Valid {
-
 		exp, err := claims.GetExpirationTime()
 		expUNIX := exp.Unix()
 		if err != nil || expUNIX < time.Now().Unix() {
-			return failedToken(w, 3)
+			return failedToken()
 		}
 		aud, err := claims.GetAudience()
 		if err != nil {
-			return failedToken(w, 8)
+			return failedToken()
 		}
 		issuer, err := claims.GetIssuer()
 		if err != nil || issuer != "mecuate-astrophytum" {
-			return failedToken(w, 4)
+			return failedToken()
 		}
 		subject, err := claims.GetSubject()
 		if err != nil {
-			return failedToken(w, 5)
+			return failedToken()
 		}
 		issuedAt, err := claims.GetIssuedAt()
 		if err != nil || issuedAt.Unix() > time.Now().Unix() {
-			return failedToken(w, 6)
+			return failedToken()
 		}
 		notBefor, err := claims.GetNotBefore()
 		if err != nil || notBefor.Unix() > time.Now().Unix() {
-			return failedToken(w, 9)
+			return failedToken()
 		}
 		email := claims.Email
 		if !Boolean(email) {
-			return failedToken(w, 7)
+			return failedToken()
 		}
 		realms := claims.Realms
 		if !Boolean(realms.Apis) || !Boolean(realms.Media) || !Boolean(realms.Mecuate) {
-			return failedToken(w, 11)
+			return failedToken()
 		}
 		id := claims.ID
 		if !Boolean(id) {
-			return failedToken(w, 10)
+			return failedToken()
 		}
 		mClaims := MecuateClaimsResponse{
 			Email:    email,
@@ -102,41 +116,23 @@ func verificateToken(w http.ResponseWriter, r *http.Request) (bool, MecuateClaim
 			Id:       subject,
 			Trace:    id,
 		}
-		return true, mClaims
+		return ok, mClaims, nil
 
 	} else {
-		return failedToken(w, 2)
+		return failedToken()
 	}
 }
 
-func failedToken(w http.ResponseWriter, num int8) (bool, MecuateClaimsResponse) {
-	http.Error(w, errorMessages[num], http.StatusUnauthorized)
-	return false, MecuateClaimsResponse{}
-}
-
-var errorMessages = map[int8]string{
-	1:  "No token.",
-	2:  "Invalid token.",
-	3:  "Token expired.",
-	4:  "Unknown issuer.",
-	5:  "Missing user reference.",
-	6:  "Missing expedition date.",
-	7:  "Missing email.",
-	8:  "Missing audience.",
-	9:  "Time range failed verification.",
-	10: "No ID found.",
-	11: "Missing realms.",
-	44: "Fly me to the moon\nLet me play among the stars\nLet me see what spring is like\nOn a-Jupiter and Mars\n\nIn other words: hold my hand\nIn other words: baby, kiss me\n\nFill my heart with song\nAnd let me sing for ever more\nYou are all I long for\nAll I worship and adore\n\nIn other words: please, be true\nIn other words: I love you\n\nFill my heart with song\nLet me sing for ever more\nYou are all I long for\nAll I worship and adore\n\nIn other words: please, be true\nIn other words, in other words: I love you",
-}
-
-func noAuthHeader(w http.ResponseWriter) {
-	http.Header.Add(w.Header(), "WWW-Authenticate", `JWT realm="Restricted"`)
-	http.Header.Add(w.Header(), "User-Token", `SESSION`)
-	http.Error(w, "", http.StatusUnauthorized)
+func failedToken(e ...interface{}) (bool, MecuateClaimsResponse, error) {
+	err := fmt.Errorf("token not valid")
+	if val, ok := e[0].(string); val != "" && ok {
+		err = fmt.Errorf(val)
+	}
+	return false, MecuateClaimsResponse{}, err
 }
 
 func hasAuthHeader(r *http.Request) (bool, error) {
-	authHeader := r.Header.Get("Authorization")
+	authHeader := r.Header.Get(AuthHeader)
 	valid := authHeader != ""
 	if !valid {
 		return valid, fmt.Errorf("no authorization header found")
