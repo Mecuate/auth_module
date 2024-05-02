@@ -2,7 +2,6 @@ package auth_module
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 func Boolean(x string) bool {
@@ -119,7 +118,6 @@ func evalWrite(v string) bool {
 }
 
 func DecodeUserToken(token string) (bool, bool) {
-	fmt.Println("::::::::::::::::::::", token)
 	if token == "" {
 		return false, false
 	}
