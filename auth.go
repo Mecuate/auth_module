@@ -125,8 +125,10 @@ func verificateToken(r *http.Request) (bool, MecuateClaimsResponse, error) {
 
 func failedToken(e ...interface{}) (bool, MecuateClaimsResponse, error) {
 	err := fmt.Errorf("token not valid")
-	if val, ok := e[0].(string); val != "" && ok {
-		err = fmt.Errorf(val)
+	if condition := len(e) > 0; condition {
+		if val, ok := e[0].(string); val != "" && ok {
+			err = fmt.Errorf(val)
+		}
 	}
 	return false, MecuateClaimsResponse{}, err
 }
